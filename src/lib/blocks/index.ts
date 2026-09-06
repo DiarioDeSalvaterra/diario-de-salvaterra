@@ -114,9 +114,31 @@ function paragrafo(nodes: readonly PhrasingContent[]): Block | undefined {
   return marcas.length > 0 ? { tipo: 'paragrafo', texto, marcas } : { tipo: 'paragrafo', texto };
 }
 
+/**
+ * Collects every image in an inline tree, however deeply nested, along with the
+ * link wrapping it if there is one.
+ *
+ * Markdown puts an image inside a paragraph, and often inside a link on top of
+ * that ([![alt](img)](url), the usual way to link a photo to its source). Only
+ * looking at direct children loses the whole image without a trace.
+ */
+function imagensEm(
+  nodes: readonly PhrasingContent[],
+  href?: string,
+): Array<{ node: Extract<PhrasingContent, { type: 'image' }>; href?: string }> {
+  const encontradas: Array<{ node: Extract<PhrasingContent, { type: 'image' }>; href?: string }> = [];
+  for (const n of nodes) {
+    if (n.type === 'image') encontradas.push({ node: n, href });
+    else if (n.type === 'link') encontradas.push(...imagensEm(n.children, n.url));
+    else if ('children' in n) encontradas.push(...imagensEm(n.children as readonly PhrasingContent[], href));
+  }
+  return encontradas;
+}
+
 function imagem(
   node: Extract<PhrasingContent, { type: 'image' }>,
   resolver: ResolverImagem | undefined,
+  href?: string,
 ): Block {
   if (!resolver) {
     throw new Error(
@@ -141,6 +163,7 @@ function imagem(
     largura: r.largura,
     altura: r.altura,
     ...(legenda ? { legenda } : {}),
+    ...(href ? { href } : {}),
   };
 }
 
@@ -197,9 +220,10 @@ function converter(
     switch (node.type) {
       case 'paragraph': {
         // Images are block-level in the output even when Markdown nests them in
-        // a paragraph, so they are hoisted and the remaining prose kept.
-        for (const child of node.children) {
-          if (child.type === 'image') out.push(imagem(child, resolver));
+        // a paragraph, or in a link inside one, so they are hoisted and the
+        // remaining prose kept.
+        for (const { node: img, href } of imagensEm(node.children)) {
+          out.push(imagem(img, resolver, href));
         }
         const p = paragrafo(node.children);
         if (p) out.push(p);

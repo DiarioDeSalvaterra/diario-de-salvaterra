@@ -111,6 +111,28 @@ describe('imagens', () => {
     expect(bloco).toMatchObject({ tipo: 'imagem', legenda: 'O cais ao amanhecer' });
   });
 
+  test('uma imagem dentro de uma ligação não desaparece, e guarda o href', () => {
+    // The usual way to point a photo at its source, [![alt](img)](url), and the
+    // shape that lost an entire image on the first article an editor wrote.
+    expect(
+      converter('[![Plantel](foto.jpg)](https://exemplo.pt/publicacao)', imagemFalsa),
+    ).toEqual([
+      {
+        tipo: 'imagem',
+        path: '/_astro/cais.webp',
+        alt: 'Plantel',
+        largura: 1600,
+        altura: 900,
+        href: 'https://exemplo.pt/publicacao',
+      },
+    ]);
+  });
+
+  test('uma imagem sem ligação não ganha href nenhum', () => {
+    const [bloco] = converter('![Cais](cais.jpg)', imagemFalsa);
+    expect(bloco).not.toHaveProperty('href');
+  });
+
   test('falha em vez de publicar uma imagem sem texto alternativo', () => {
     expect(() => converter('![](cais.jpg)', imagemFalsa)).toThrow(/texto alternativo/);
   });

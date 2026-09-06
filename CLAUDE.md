@@ -137,7 +137,7 @@ at build time.
 type Block =
   | { tipo: 'paragrafo';  texto: string; marcas?: Marca[] }
   | { tipo: 'titulo';     nivel: 2|3; texto: string }
-  | { tipo: 'imagem';     path: string; alt: string; legenda?: string; largura: number; altura: number }
+  | { tipo: 'imagem';     path: string; alt: string; legenda?: string; largura: number; altura: number; href?: string }
   | { tipo: 'citacao';    texto: string; atribuicao?: string }
   | { tipo: 'lista';      ordenada: boolean; itens: string[] }
   | { tipo: 'separador' }
@@ -161,7 +161,9 @@ fim)` is exactly the marked run. Strikethrough collapses to `italico`; there is
 no separate mark for it.
 
 **Fields beyond the shapes above**, all additive and safe for older clients to
-ignore: `capa.credito` and `destaque` on an article, `aviso` on the tenant.
+ignore: `capa.credito` and `destaque` on an article, `aviso` on the tenant, and
+`href` on an `imagem`, set when the image was wrapped in a link — the usual way
+to point a photo at its source.
 
 **Text normalisation.** A single newline inside a Markdown paragraph is a soft
 break and becomes a space, so the source file's line wrapping never reaches the

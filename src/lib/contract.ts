@@ -45,6 +45,9 @@ export const blockSchema = z.discriminatedUnion('tipo', [
     legenda: z.string().optional(),
     largura: z.number().int().positive(),
     altura: z.number().int().positive(),
+    // Set when the image was wrapped in a link, the usual way to point a photo
+    // at its source. Absolute, because it normally leaves the site.
+    href: z.string().min(1).optional(),
   }),
   z.object({ tipo: z.literal('citacao'), texto: z.string(), atribuicao: z.string().optional() }),
   z.object({ tipo: z.literal('lista'), ordenada: z.boolean(), itens: z.array(z.string()) }),

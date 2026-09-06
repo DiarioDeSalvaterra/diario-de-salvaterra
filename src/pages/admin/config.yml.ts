@@ -35,6 +35,17 @@ const config = {
   media_folder: 'src/assets/uploads',
   public_folder: '/src/assets/uploads',
 
+  /**
+   * Upload filenames are slugified. Without this the CMS keeps whatever the
+   * operating system gave the file — "Captura de ecrã 2026-09-06, às 19.40.30
+   * .png" — and Astro's Markdown asset resolution does not fully percent-decode
+   * such a path, so the build fails with ImageNotFound. Found the hard way on
+   * the first article written through the CMS.
+   */
+  media_libraries: {
+    all: { slugify_filename: true },
+  },
+
   collections: [
     {
       name: 'artigos',
@@ -42,6 +53,10 @@ const config = {
       label_singular: 'Artigo',
       folder: 'src/content/artigos',
       create: true,
+      // Without identifier_field the CMS cannot tell which field is the title
+      // — ours is `titulo`, not `title` — and falls back to a random hex slug
+      // like "505c63030164". The slug is a public URL; it should read.
+      identifier_field: 'titulo',
       slug: '{{slug}}',
       preview_path: 'artigo/{{slug}}',
       sortable_fields: ['publicadoEm', 'titulo', 'seccao'],
