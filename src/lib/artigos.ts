@@ -8,7 +8,9 @@
 
 import { getCollection, type CollectionEntry } from 'astro:content';
 import { SITE, type Seccao, type Localidade } from '../config/site';
-import { markdownParaBlocos, type Block, type ImagemResolvida } from './blocks';
+import { markdownParaBlocos, type ImagemResolvida } from './blocks';
+import type { Block } from './contract';
+import type { z } from 'zod';
 
 export type Artigo = CollectionEntry<'artigos'>;
 
@@ -85,8 +87,15 @@ export function artigoJson(artigo: Artigo): ReturnType<typeof resumoJson> & { co
   };
 }
 
-/** JSON response with the formatting used by every /api/v1 endpoint. */
-export const json = (data: unknown): Response =>
-  new Response(JSON.stringify(data, null, 2), {
+/**
+ * JSON response for an /api/v1 endpoint, validated against the contract before
+ * it is written.
+ *
+ * The parse is the point: a payload that no longer matches the schema fails the
+ * build here, rather than shipping to an app that cannot be hotfixed. Zod's
+ * error names the offending field.
+ */
+export const json = <T>(schema: z.ZodType<T>, data: unknown): Response =>
+  new Response(JSON.stringify(schema.parse(data), null, 2), {
     headers: { 'content-type': 'application/json; charset=utf-8' },
   });

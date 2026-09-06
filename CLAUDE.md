@@ -141,6 +141,7 @@ type Block =
   | { tipo: 'citacao';    texto: string; atribuicao?: string }
   | { tipo: 'lista';      ordenada: boolean; itens: string[] }
   | { tipo: 'separador' }
+  | { tipo: 'desconhecido'; origem: string; fonte: string }
 ```
 
 **Inline marks.** A paragraph carries plain text plus the marks that apply to
@@ -166,9 +167,23 @@ ignore: `capa.credito` and `destaque` on an article, `aviso` on the tenant.
 break and becomes a space, so the source file's line wrapping never reaches the
 app. Only an explicit hard break emits `\n`.
 
-**Blocks the converter does not produce.** A fenced code block degrades to a
-`paragrafo`; raw HTML in the Markdown is dropped rather than passed to an app
-that cannot render it. Both are marked in `src/lib/blocks.ts`.
+**Nothing an editor wrote is ever dropped.** Valid Markdown the contract does
+not model — tables, fenced code, raw HTML — becomes a `desconhecido` block
+carrying its own source, so the app can fall back and the gap is visible rather
+than silent. Throwing was the alternative, and it lost: a table is legitimate
+copy, and blocking a publish is worse than handing the app something to render
+around. Reference links and images (`[t][id]`, `![alt][id]`) are resolved to
+their inline form first, since otherwise the href, or the whole image, would
+vanish without trace.
+
+The only nodes allowed to produce nothing are link and footnote definitions,
+which render nothing by design.
+
+**Structure the converter enforces.** A level-1 heading in the body is an error:
+the article title is the page's only h1 and comes from the frontmatter. Headings
+below h3 collapse to h3. A nested list is flattened into its parent, each nested
+item becoming an item of the same list — `Block` has no nesting, and the indent
+level is dropped on purpose while the text never is.
 
 **Failures are build failures.** An image without alt text, or one the build
 cannot resolve, throws instead of shipping. On a news site alt text is a
@@ -177,10 +192,16 @@ requirement, and silently dropping content is worse than a red build.
 `capabilities` must be present from day one even though everything is `true`.
 The app renders from capabilities, never from assumptions.
 
-The converter lives in `src/lib/blocks.ts` and imports nothing from Astro, so it
-stays testable with `bun test` and portable to another project. Keep it that
-way: the build injects a resolver callback for image paths and dimensions rather
-than letting Astro leak into the module.
+The converter lives in `src/lib/blocks/` and the shapes above in
+`src/lib/contract.ts`. Neither imports anything from Astro, so both stay
+testable with `bun test` and portable to another project. Keep it that way: the
+build injects a resolver callback for image paths and dimensions rather than
+letting Astro leak into the module.
+
+`contract.ts` holds the Zod schemas, and it is the single definition of the API
+shape: `Block` and `Marca` are inferred from it and re-exported by the
+converter, and every endpoint validates its payload against it before writing a
+file. A payload that stops matching fails the build.
 
 ## Design direction
 
@@ -260,7 +281,9 @@ bun install
 bun run dev          # local dev
 bun run build        # static build to dist/
 bun run preview      # serve the build
-bun test             # converter self-check
+bun test             # unit: converter and contract, no build needed
+bun run test:dist    # build-output assertions, needs a dist/
+bun run verify       # the full CI gate, in order
 bunx astro check     # typecheck
 ```
 
@@ -337,6 +360,63 @@ Set the repository variables under **Settings > Secrets and variables > Actions
 
 Both variables are read with `||` rather than `??`, because an unset Actions
 variable arrives as an empty string and would otherwise beat the default.
+
+## Testing
+
+Test the contract, not the site. The site is throwaway. The Markdown → Block
+converter and the JSON shape carry into the real platform and into the Expo app.
+
+Runner is **`bun test`** — built in, no dependency to install. This is why the
+converter must have no Astro imports: it stays testable without Vite's module
+resolution.
+
+### Must have
+
+**1. Markdown → Block[] converter** (`src/lib/blocks/`)
+One test per block type, plus:
+- inline marks: bold, italic, link — nested and adjacent
+- headings: h2 and h3 only; an h1 in the body is an error (the title is the h1)
+- images: with and without caption; empty alt is an error
+- blockquote with and without attribution
+- lists: ordered and unordered; decide nested behaviour and test it explicitly
+- pt-PT text: diacritics, guillemets («»), em dashes, non-breaking spaces
+- **unknown nodes must never be silently dropped.** Tables, code blocks and raw
+  HTML either throw or emit a `desconhecido` block. Silent loss means an article
+  publishes with a paragraph missing and nobody notices.
+
+**2. Contract schemas** (`src/lib/contract.ts`)
+Define the API shape once as Zod schemas, used for both:
+- validating emitted JSON at build time — a mismatch fails the build
+- the types the Expo app imports later
+
+One source of truth, so the test is nearly free.
+
+**3. Build-output assertions** (against `dist/`)
+- every expected route exists
+- every `api/v1/articles/*.json` parses and validates against the schema
+- `articles.json` count matches non-draft articles
+- **no absolute hostname anywhere in the JSON** except `tenant.json.baseUrl` and
+  each article's `url` — this is what protects the dev → apex move
+- every image path in the JSON resolves to a real file in `dist`
+
+**4. Accessibility**
+axe-core over the built HTML (jsdom, no browser) for the front page, an article
+and a section index. Fail on serious and critical.
+Colour contrast is verified by hand against the fixed palette — see Design
+direction — so it is out of scope for axe here. Re-verify by hand if the palette
+changes.
+
+### Do not test
+
+- Astro component markup or snapshots — maintenance tax, catches nothing
+- Styling
+- Sveltia — third party
+- E2E journeys — there are none; the site is static with no interaction
+
+### CI gate
+
+`bunx astro check` → `bun test` → `bun run build` → build-output assertions → deploy.
+A failing contract assertion blocks the deploy. It does not warn.
 
 ## Don'ts
 

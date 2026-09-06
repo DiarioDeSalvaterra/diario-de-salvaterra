@@ -17,27 +17,12 @@ import { gfmFromMarkdown } from 'mdast-util-gfm';
 import { gfm } from 'micromark-extension-gfm';
 import type { PhrasingContent, RootContent } from 'mdast';
 
-/** Inline marks on a paragraph, as offsets into its plain text. */
-export type Marca =
-  | { tipo: 'negrito'; inicio: number; fim: number }
-  | { tipo: 'italico'; inicio: number; fim: number }
-  | { tipo: 'codigo'; inicio: number; fim: number }
-  | { tipo: 'ligacao'; inicio: number; fim: number; href: string };
-
-export type Block =
-  | { tipo: 'paragrafo'; texto: string; marcas?: Marca[] }
-  | { tipo: 'titulo'; nivel: 2 | 3; texto: string }
-  | {
-      tipo: 'imagem';
-      path: string;
-      alt: string;
-      legenda?: string;
-      largura: number;
-      altura: number;
-    }
-  | { tipo: 'citacao'; texto: string; atribuicao?: string }
-  | { tipo: 'lista'; ordenada: boolean; itens: string[] }
-  | { tipo: 'separador' };
+/**
+ * Block and Marca are defined once, in the contract module, and re-exported
+ * here for convenience. Two hand-written copies of a published shape drift.
+ */
+export type { Block, Marca } from '../contract';
+import type { Block, Marca } from '../contract';
 
 /** Dimensions and final path for an image referenced from the article body. */
 export interface ImagemResolvida {
@@ -70,7 +55,11 @@ function inline(nodes: readonly PhrasingContent[]): { texto: string; marcas: Mar
           // A single newline inside a Markdown paragraph is a soft break, i.e.
           // a space. Passing the source file's hard wrapping through would make
           // the app render line breaks in the middle of sentences.
-          texto += n.value.replace(/\s*\n\s*/g, ' ');
+          //
+          // [ \t] and not \s: in JavaScript \s matches U+00A0, so a
+          // non-breaking space sitting next to a line wrap would be eaten. In
+          // pt-PT that space is typographic and must survive.
+          texto += n.value.replace(/[ \t]*\n[ \t]*/g, ' ');
           break;
         case 'inlineCode': {
           const inicio = texto.length;
@@ -184,7 +173,24 @@ function citacao(blocos: readonly Block[]): Block | undefined {
   return { tipo: 'citacao', texto: textos.join('\n\n').trim() };
 }
 
-function converter(nodes: readonly RootContent[], resolver: ResolverImagem | undefined): Block[] {
+/**
+ * Wraps an unmodelled node, keeping the Markdown that produced it. mdast gives
+ * every node its source offsets, so the original text is quoted verbatim rather
+ * than reconstructed.
+ */
+function desconhecido(node: RootContent, fonte: string): Block | undefined {
+  const inicio = node.position?.start?.offset;
+  const fim = node.position?.end?.offset;
+  const bruto = inicio !== undefined && fim !== undefined ? fonte.slice(inicio, fim) : '';
+  if (!bruto.trim()) return undefined;
+  return { tipo: 'desconhecido', origem: node.type, fonte: bruto };
+}
+
+function converter(
+  nodes: readonly RootContent[],
+  resolver: ResolverImagem | undefined,
+  fonte: string,
+): Block[] {
   const out: Block[] = [];
 
   for (const node of nodes) {
@@ -200,48 +206,101 @@ function converter(nodes: readonly RootContent[], resolver: ResolverImagem | und
         break;
       }
       case 'heading': {
-        // h1 is the article title, rendered from frontmatter. Anything deeper
-        // than h3 collapses to h3 rather than inventing a level the app cannot
-        // render.
-        const nivel = node.depth <= 2 ? 2 : 3;
+        // The article title is the page's only h1 and comes from the
+        // frontmatter, so one in the body is a mistake worth failing on rather
+        // than silently demoting. Anything below h3 collapses to h3 instead of
+        // inventing a level the app cannot render.
+        if (node.depth === 1) {
+          throw new Error(
+            `markdownParaBlocos: o corpo tem um título de nível 1 ("${plano(node.children)}"). ` +
+              'O título do artigo vem do frontmatter; use ## a partir daqui.',
+          );
+        }
+        const nivel = node.depth === 2 ? 2 : 3;
         const texto = plano(node.children);
         if (texto.trim()) out.push({ tipo: 'titulo', nivel, texto });
         break;
       }
       case 'blockquote': {
-        const c = citacao(converter(node.children, resolver));
+        const c = citacao(converter(node.children, resolver, fonte));
         if (c) out.push(c);
         break;
       }
       case 'list': {
-        const itens = node.children
-          .map((li) => converter(li.children, resolver)
-            .map((b) => ('texto' in b ? b.texto : ''))
-            .filter(Boolean)
-            .join(' '))
-          .filter((t) => t.trim());
+        // ponytail: a nested list is flattened into its parent, each nested
+        // item becoming an item of the same list, in order. Block has no
+        // nesting and a flat list renders correctly everywhere; no text is
+        // lost, only the indent level. Give `itens` a recursive type if the
+        // app ever needs to show the hierarchy.
+        const itens: string[] = [];
+        for (const li of node.children) {
+          for (const bloco of converter(li.children, resolver, fonte)) {
+            if (bloco.tipo === 'lista') itens.push(...bloco.itens);
+            else if ('texto' in bloco && bloco.texto.trim()) itens.push(bloco.texto);
+          }
+        }
         if (itens.length > 0) out.push({ tipo: 'lista', ordenada: node.ordered === true, itens });
         break;
       }
       case 'thematicBreak':
         out.push({ tipo: 'separador' });
         break;
-      case 'code':
-        // ponytail: no code block in the contract — a local paper has no use
-        // for one. Rendered as a plain paragraph; add a 'codigo' block if that
-        // ever stops being true.
-        if (node.value.trim()) out.push({ tipo: 'paragrafo', texto: node.value });
+      // Link and footnote definitions render nothing by design: they are
+      // referenced from inline text, not shown. They are the only nodes that
+      // may vanish without becoming a desconhecido block.
+      case 'definition':
+      case 'footnoteDefinition':
         break;
-      case 'html':
-        // Content is Markdown, never HTML blobs. Raw HTML is dropped instead of
-        // being passed through to an app that cannot render it.
+      default: {
+        const bloco = desconhecido(node, fonte);
+        if (bloco) out.push(bloco);
         break;
-      default:
-        break;
+      }
     }
   }
 
   return out;
+}
+
+/**
+ * Rewrites reference links and images ([texto][id], ![alt][id]) into their
+ * inline equivalents, using the definitions collected from the document.
+ *
+ * Without this a reference link loses its href and a reference image vanishes
+ * entirely, both without a trace — exactly the silent loss the desconhecido
+ * block exists to prevent. A reference with no matching definition is left
+ * alone: there is no destination to lose, and its text still comes through.
+ */
+function resolverReferencias(nodes: readonly RootContent[]): void {
+  const definicoes = new Map<string, { url: string; title?: string | null }>();
+
+  const recolher = (ns: readonly RootContent[]): void => {
+    for (const n of ns) {
+      if (n.type === 'definition') definicoes.set(n.identifier, { url: n.url, title: n.title });
+      if ('children' in n) recolher(n.children as readonly RootContent[]);
+    }
+  };
+
+  const trocar = (ns: readonly RootContent[]): void => {
+    for (const n of ns) {
+      if (n.type === 'linkReference' || n.type === 'imageReference') {
+        const d = definicoes.get(n.identifier);
+        if (d) {
+          const alt = n.type === 'imageReference' ? n.alt : undefined;
+          Object.assign(n, {
+            type: n.type === 'imageReference' ? 'image' : 'link',
+            url: d.url,
+            title: d.title ?? null,
+            ...(alt !== undefined ? { alt } : {}),
+          });
+        }
+      }
+      if ('children' in n) trocar(n.children as readonly RootContent[]);
+    }
+  };
+
+  recolher(nodes);
+  trocar(nodes);
 }
 
 /**
@@ -255,5 +314,6 @@ export function markdownParaBlocos(markdown: string, resolver?: ResolverImagem):
     extensions: [gfm()],
     mdastExtensions: [gfmFromMarkdown()],
   });
-  return converter(tree.children, resolver);
+  resolverReferencias(tree.children);
+  return converter(tree.children, resolver, markdown);
 }

@@ -1,13 +1,14 @@
 import type { APIRoute } from 'astro';
 import { SITE, SECCOES, LOCALIDADES, CAPABILITIES } from '../../../config/site';
 import { json } from '../../../lib/artigos';
+import { tenantSchema } from '../../../lib/contract';
 
 /**
  * Tenant descriptor. `baseUrl` is the only absolute host in the whole API:
  * every other path is relative and resolved against it by the app.
  */
 export const GET: APIRoute = () =>
-  json({
+  json(tenantSchema, {
     id: SITE.id,
     nome: SITE.nome,
     descricao: SITE.descricao,
