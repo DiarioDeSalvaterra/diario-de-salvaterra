@@ -10,7 +10,7 @@ localidades:
 autor: Autor
 publicadoEm: 2026-09-06
 destaque: true
-rascunho: true
+rascunho: false
 ---
 
 O Sport Clube Desportos de Glória do Ribatejo apresentou no Campo dos Carvalhos a equipa sénior e os escalões de formação para a nova temporada, numa iniciativa que juntou atletas, treinadores, famílias e adeptos.

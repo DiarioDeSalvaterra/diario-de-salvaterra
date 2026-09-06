@@ -91,12 +91,37 @@ describe('contrato', () => {
 
 describe('caminhos', () => {
   /**
-   * The dev -> apex move works only because nothing in the JSON hardcodes the
-   * host. The two documented exceptions are tenant.baseUrl and each article's
-   * url, which is absolute so it can be shared and used as a canonical tag.
+   * The dev -> apex move works only because no *site path* in the JSON
+   * hardcodes the host. Three keys are allowed to hold an absolute URL, and
+   * each is documented in CLAUDE.md:
+   *
+   *   baseUrl  the tenant's own host, the one thing clients resolve against
+   *   url      an article's canonical address, absolute so it can be shared
+   *   href     a link out of the site: an image's source, or a link in the copy
+   *
+   * Anything else absolute is a site path that would not survive the move.
    */
-  test('nenhum host absoluto no JSON, tirando as duas exceções do contrato', () => {
+  const CHAVES_ABSOLUTAS = new Set(['baseUrl', 'url', 'href']);
+
+  const hostsIndevidos = (valor: unknown, chave = '', caminho = ''): string[] => {
+    if (typeof valor === 'string') {
+      if (!/^https?:\/\//.test(valor)) return [];
+      return CHAVES_ABSOLUTAS.has(chave) ? [] : [`${caminho} = ${valor}`];
+    }
+    if (Array.isArray(valor)) {
+      return valor.flatMap((v, i) => hostsIndevidos(v, chave, `${caminho}[${i}]`));
+    }
+    if (valor && typeof valor === 'object') {
+      return Object.entries(valor).flatMap(([k, v]) =>
+        hostsIndevidos(v, k, caminho ? `${caminho}.${k}` : k),
+      );
+    }
+    return [];
+  };
+
+  test('nenhum caminho do site fixa o host, nem em articles.json nem nos artigos', () => {
     const ficheiros = [
+      'api/v1/tenant.json',
       'api/v1/articles.json',
       ...readdirSync(join(DIST, 'api/v1/articles'))
         .filter((f) => f.endsWith('.json'))
@@ -104,21 +129,19 @@ describe('caminhos', () => {
     ];
 
     for (const f of ficheiros) {
-      const dados = lerJson(f);
-      const artigos = 'articles' in dados ? dados.articles : [dados];
-      for (const artigo of artigos) {
-        // Drop the one field allowed to be absolute, then nothing else may be.
-        const { url, ...resto } = artigo;
-        expect(url).toStartWith('http');
-        const encontrados = JSON.stringify(resto).match(/https?:\\?\/\\?\//g) ?? [];
-        expect(encontrados).toEqual([]);
-      }
+      expect({ ficheiro: f, absolutos: hostsIndevidos(lerJson(f)) }).toEqual({
+        ficheiro: f,
+        absolutos: [],
+      });
     }
+  });
 
-    const tenant = lerJson('api/v1/tenant.json');
-    const { baseUrl, ...resto } = tenant;
-    expect(baseUrl).toStartWith('http');
-    expect(JSON.stringify(resto).match(/https?:\\?\/\\?\//g) ?? []).toEqual([]);
+  test('as três chaves que podem ser absolutas continuam a sê-lo', () => {
+    expect(lerJson('api/v1/tenant.json').baseUrl).toStartWith('http');
+    for (const a of lerJson('api/v1/articles.json').articles) {
+      expect(a.url).toStartWith('http');
+      expect(a.capa.path).toStartWith('/');
+    }
   });
 
   test('cada imagem referida no JSON existe mesmo em dist', () => {

@@ -125,10 +125,17 @@ field is a breaking change; add optional fields instead.
   { ...same fields, corpo: Block[] }
 ```
 
-**All paths in the JSON are relative.** `baseUrl` in `tenant.json` is the only
-absolute host, and clients resolve against it. This is what lets the site move
-from `dev.` to the apex without rebuilding the app. The one exception is each
-article's `url`, which stays absolute for sharing and canonical tags.
+**Every site path in the JSON is relative**, so the site can move from `dev.` to
+the apex without rebuilding the app. Exactly three keys may hold an absolute
+URL, and the build asserts that nothing else does:
+
+| Key | Why |
+|---|---|
+| `tenant.baseUrl` | the host itself; clients resolve every relative path against it |
+| an article's `url` | its canonical address, absolute so it can be shared |
+| an `href` | a link *out* of the site: an image's source, or a link in the copy |
+
+An `href` is content, not a site path, so it never moves with the domain.
 
 **`corpo` is a block array, never an HTML string.** Markdown converts to blocks
 at build time.
