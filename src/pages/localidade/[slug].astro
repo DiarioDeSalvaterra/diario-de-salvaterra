@@ -1,0 +1,39 @@
+---
+import type { GetStaticPaths } from 'astro';
+import Base from '../../layouts/Base.astro';
+import CartaoArtigo from '../../components/CartaoArtigo.astro';
+import { listarArtigos, porLocalidade, type Artigo } from '../../lib/artigos';
+import { LOCALIDADE_SLUGS, nomeLocalidade, type Localidade } from '../../config/site';
+
+export const getStaticPaths: GetStaticPaths = async () => {
+  const artigos = await listarArtigos();
+  return LOCALIDADE_SLUGS.map((slug) => ({
+    params: { slug },
+    props: { slug, artigos: porLocalidade(artigos, slug) },
+  }));
+};
+
+const { slug, artigos } = Astro.props as { slug: Localidade; artigos: Artigo[] };
+const nome = nomeLocalidade(slug);
+---
+
+<Base titulo={nome} descricao={`Notícias de ${nome}, concelho de Salvaterra de Magos.`}>
+  <div class="seccao-cabecalho">
+    <h1>{nome}</h1>
+    <p>{artigos.length === 1 ? '1 artigo' : `${artigos.length} artigos`}</p>
+  </div>
+
+  {
+    artigos.length > 0 ? (
+      <ul class="grelha">
+        {artigos.map((artigo) => (
+          <li>
+            <CartaoArtigo artigo={artigo} />
+          </li>
+        ))}
+      </ul>
+    ) : (
+      <p class="vazio">Ainda não há artigos desta freguesia.</p>
+    )
+  }
+</Base>

@@ -1,0 +1,116 @@
+---
+import { Font } from 'astro:assets';
+import { SITE, INDEXAVEL, SECCOES, LOCALIDADES } from '../config/site';
+import '../styles/global.css';
+
+interface Props {
+  titulo: string;
+  descricao?: string;
+  /** Absolute canonical URL. Defaults to the current page. */
+  canonico?: string;
+}
+
+const { titulo, descricao = SITE.descricao, canonico } = Astro.props;
+const canonical = canonico ?? new URL(Astro.url.pathname, SITE.baseUrl).href;
+const tituloCompleto = titulo === SITE.nome ? titulo : `${titulo} — ${SITE.nome}`;
+const rota = Astro.url.pathname;
+---
+
+<!doctype html>
+<html lang="pt-PT">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{tituloCompleto}</title>
+    <meta name="description" content={descricao} />
+    <link rel="canonical" href={canonical} />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link
+      rel="alternate"
+      type="application/rss+xml"
+      title={SITE.nome}
+      href={new URL('/rss.xml', SITE.baseUrl).href}
+    />
+
+    {/*
+      The dev host carries fictional news about a real municipality, so it must
+      never be indexed. This flips automatically at the apex domain via
+      PUBLIC_INDEXAVEL; see also the robots.txt route.
+    */}
+    {!INDEXAVEL && <meta name="robots" content="noindex, nofollow" />}
+
+    <Font cssVariable="--fonte-titulo" preload />
+    <Font cssVariable="--fonte-texto" preload />
+
+    <meta property="og:site_name" content={SITE.nome} />
+    <meta property="og:title" content={tituloCompleto} />
+    <meta property="og:description" content={descricao} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:locale" content="pt_PT" />
+  </head>
+
+  <body>
+    <a class="saltar" href="#conteudo">Saltar para o conteúdo</a>
+
+    <p class="aviso">{SITE.aviso}</p>
+
+    <header class="cabecalho">
+      <div class="envolve masthead">
+        <a class="masthead__titulo" href="/">{SITE.nome}</a>
+        <span class="masthead__lema">Concelho de Salvaterra de Magos</span>
+      </div>
+      <nav class="navegacao" aria-label="Secções">
+        <div class="envolve">
+          <ul>
+            {
+              Object.entries(SECCOES).map(([slug, nome]) => (
+                <li>
+                  <a
+                    href={`/seccao/${slug}/`}
+                    aria-current={rota.startsWith(`/seccao/${slug}`) ? 'page' : undefined}
+                  >
+                    {nome}
+                  </a>
+                </li>
+              ))
+            }
+          </ul>
+        </div>
+      </nav>
+    </header>
+
+    <main id="conteudo" class="envolve">
+      <slot />
+    </main>
+
+    <footer class="rodape">
+      <div class="envolve rodape__grelha">
+        <div>
+          <h2>{SITE.nome}</h2>
+          <p>{SITE.descricao}</p>
+          <p><strong>{SITE.aviso}</strong></p>
+        </div>
+        <div>
+          <h2>Freguesias</h2>
+          <ul>
+            {
+              Object.entries(LOCALIDADES).map(([slug, nome]) => (
+                <li>
+                  <a href={`/localidade/${slug}/`}>{nome}</a>
+                </li>
+              ))
+            }
+          </ul>
+        </div>
+        <div>
+          <h2>O jornal</h2>
+          <ul>
+            <li><a href="/sobre/">Sobre e ficha técnica</a></li>
+            <li><a href="/rss.xml">Feed RSS</a></li>
+            <li><a href="/api/v1/tenant.json">API pública</a></li>
+          </ul>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>

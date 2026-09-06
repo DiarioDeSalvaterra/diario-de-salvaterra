@@ -1,0 +1,65 @@
+---
+import Base from '../layouts/Base.astro';
+import { SITE, LOCALIDADES } from '../config/site';
+
+const freguesias = Object.values(LOCALIDADES).join(', ');
+---
+
+<Base titulo="Sobre" descricao="Ficha técnica e nota editorial do Diário de Salvaterra.">
+  <div class="prosa">
+    <h1>Sobre o Diário de Salvaterra</h1>
+
+    <p>
+      O <strong>Diário de Salvaterra</strong> é uma demonstração técnica de uma plataforma
+      para jornais locais. Cobre, na ficção, o concelho de Salvaterra de Magos e as suas
+      quatro freguesias: {freguesias}.
+    </p>
+
+    <h2>Aviso importante</h2>
+    <p>
+      <strong>Todo o conteúdo deste sítio é ficcional.</strong> Os artigos, os autores e as
+      declarações citadas foram inventados para efeitos de demonstração. O concelho é real,
+      as notícias não são. Nada aqui publicado deve ser lido como informação sobre
+      acontecimentos, pessoas ou entidades reais.
+    </p>
+    <p>
+      Nenhum artigo nomeia pessoas reais, autarcas ou empresas, e nenhum texto foi copiado
+      ou adaptado de órgãos de comunicação social existentes.
+    </p>
+
+    <h2>Nota editorial</h2>
+    <p>
+      O objetivo é mostrar como um jornal regional pode publicar em papel digital sem
+      servidores, sem base de dados e sem custos de operação: os artigos são ficheiros de
+      texto guardados no repositório, e o sítio é reconstruído a cada alteração.
+    </p>
+    <p>
+      Não há publicidade, não há rastreio, não há cookies e não há conteúdos de terceiros.
+      Nenhum dado de quem visita é recolhido.
+    </p>
+
+    <h2>Aplicação móvel</h2>
+    <p>
+      Os mesmos artigos são publicados em formato aberto para consumo por aplicações
+      móveis. O ponto de entrada é
+      <a href="/api/v1/tenant.json"><code>/api/v1/tenant.json</code></a>, que descreve o
+      jornal, as secções e as freguesias.
+    </p>
+
+    <h2>Ficha técnica</h2>
+    <dl>
+      <dt>Título</dt>
+      <dd>{SITE.nome}</dd>
+      <dt>Âmbito</dt>
+      <dd>Concelho de Salvaterra de Magos, Ribatejo</dd>
+      <dt>Língua</dt>
+      <dd>Português europeu</dd>
+      <dt>Natureza</dt>
+      <dd>Sítio de demonstração, conteúdo ficcional</dd>
+      <dt>Endereço</dt>
+      <dd>{SITE.baseUrl.replace(/^https?:\/\//, '')}</dd>
+      <dt>Feed</dt>
+      <dd><a href="/rss.xml">/rss.xml</a></dd>
+    </dl>
+  </div>
+</Base>

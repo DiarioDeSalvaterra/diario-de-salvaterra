@@ -1,0 +1,496 @@
+/*
+ * Diário de Salvaterra — folha de estilo única.
+ *
+ * Hand-rolled on purpose: a regional newspaper is a handful of layouts, and a
+ * framework would ship more CSS than the whole site. Mobile-first, no client
+ * JavaScript, readable on an old Android.
+ */
+
+:root {
+  --tinta: #131820;
+  --tinta-suave: #4a5361;
+  --creme: #f0e8d8;
+  --creme-fundo: #f7f2e8;
+  --ocre: #c9722f;
+  --ocre-escuro: #a25a22;
+  --linha: #d9cfba;
+
+  --serif: var(--fonte-titulo), Georgia, 'Times New Roman', serif;
+  --sans: var(--fonte-texto), system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  --medida: 68ch; /* 65–75 characters, the readable measure */
+  --largura: 68rem;
+  --gutter: clamp(1rem, 4vw, 2rem);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--creme-fundo);
+  color: var(--tinta);
+  font-family: var(--sans);
+  font-size: 1.0625rem;
+  line-height: 1.65;
+  -webkit-text-size-adjust: 100%;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--serif);
+  font-weight: 700;
+  line-height: 1.12;
+  letter-spacing: -0.015em;
+  text-wrap: balance;
+  margin: 0;
+}
+
+a {
+  color: inherit;
+  text-decoration-color: var(--linha);
+  text-underline-offset: 0.18em;
+}
+
+a:hover {
+  text-decoration-color: var(--ocre);
+  color: var(--ocre-escuro);
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+:focus-visible {
+  outline: 3px solid var(--ocre);
+  outline-offset: 2px;
+}
+
+.envolve {
+  width: 100%;
+  max-width: var(--largura);
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+}
+
+/* Skip link — keyboard users should not tab the whole masthead every page. */
+.saltar {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  background: var(--tinta);
+  color: var(--creme);
+  padding: 0.75rem 1rem;
+  z-index: 10;
+}
+.saltar:focus {
+  left: 0;
+}
+
+/* ---- aviso de demonstração ---------------------------------------------- */
+/* Fictional news about a real municipality: the notice is a requirement. */
+.aviso {
+  background: var(--tinta);
+  color: var(--creme);
+  font-size: 0.8125rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-align: center;
+  padding: 0.5rem var(--gutter);
+}
+
+/* ---- cabeçalho ----------------------------------------------------------- */
+.cabecalho {
+  border-bottom: 2px solid var(--tinta);
+  background: var(--creme);
+}
+
+.masthead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 1rem;
+  padding-block: 1.25rem 1rem;
+}
+
+.masthead__titulo {
+  font-family: var(--serif);
+  font-size: clamp(1.75rem, 6vw, 2.75rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  text-decoration: none;
+}
+
+.masthead__lema {
+  font-size: 0.875rem;
+  color: var(--tinta-suave);
+}
+
+.navegacao {
+  border-top: 1px solid var(--linha);
+}
+
+.navegacao ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1.25rem;
+  list-style: none;
+  margin: 0;
+  padding: 0.6rem 0;
+  font-size: 0.9375rem;
+  font-weight: 500;
+}
+
+.navegacao a {
+  text-decoration: none;
+  padding-block: 0.15rem;
+  border-bottom: 2px solid transparent;
+}
+
+.navegacao a:hover,
+.navegacao a[aria-current='page'] {
+  border-bottom-color: var(--ocre);
+  color: var(--tinta);
+}
+
+/* ---- metadados: chips e etiquetas --------------------------------------- */
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8125rem;
+  color: var(--tinta-suave);
+}
+
+.chip {
+  font-family: var(--sans);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  text-decoration: none;
+  color: var(--ocre-escuro);
+  border: 1px solid var(--ocre);
+  border-radius: 2px;
+  padding: 0.1rem 0.45rem;
+  white-space: nowrap;
+}
+
+.chip:hover {
+  background: var(--ocre);
+  color: var(--creme);
+}
+
+.etiqueta {
+  font-size: 0.8125rem;
+  text-decoration: none;
+  color: var(--tinta-suave);
+  border-bottom: 1px solid var(--linha);
+}
+
+.etiqueta:hover {
+  color: var(--ocre-escuro);
+  border-bottom-color: var(--ocre);
+}
+
+/* ---- destaque ------------------------------------------------------------ */
+.destaque {
+  display: block;
+  text-decoration: none;
+  padding-block: 2rem 2.25rem;
+  border-bottom: 2px solid var(--tinta);
+}
+
+.destaque__capa {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  background: var(--linha);
+  margin-bottom: 1.25rem;
+}
+
+.destaque__titulo {
+  font-size: clamp(1.875rem, 5.5vw, 3.25rem);
+  margin-block: 0.5rem;
+}
+
+.destaque:hover .destaque__titulo {
+  text-decoration: underline;
+  text-decoration-color: var(--ocre);
+  text-underline-offset: 0.1em;
+}
+
+.destaque__resumo {
+  font-size: clamp(1rem, 2.5vw, 1.1875rem);
+  color: var(--tinta-suave);
+  max-width: var(--medida);
+  margin-block: 0.5rem 0.9rem;
+}
+
+/* ---- grelha de artigos --------------------------------------------------- */
+.grelha {
+  display: grid;
+  gap: 2rem;
+  grid-template-columns: 1fr;
+  padding-block: 2rem 3rem;
+  list-style: none;
+  margin: 0;
+}
+
+@media (min-width: 40rem) {
+  .grelha {
+    grid-template-columns: repeat(2, 1fr);
+    column-gap: 2.5rem;
+  }
+}
+
+@media (min-width: 60rem) {
+  .grelha {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.cartao {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.cartao__capa {
+  width: 100%;
+  aspect-ratio: 3 / 2;
+  object-fit: cover;
+  background: var(--linha);
+}
+
+.cartao__titulo {
+  font-size: 1.3125rem;
+}
+
+.cartao__titulo a {
+  text-decoration: none;
+}
+
+.cartao__titulo a:hover {
+  text-decoration: underline;
+  text-decoration-color: var(--ocre);
+}
+
+.cartao__resumo {
+  font-size: 0.9375rem;
+  color: var(--tinta-suave);
+  margin: 0;
+}
+
+/* ---- cabeçalho de secção ------------------------------------------------- */
+.seccao-cabecalho {
+  padding-block: 2rem 1rem;
+  border-bottom: 1px solid var(--linha);
+}
+
+.seccao-cabecalho h1 {
+  font-size: clamp(1.75rem, 5vw, 2.5rem);
+}
+
+.seccao-cabecalho p {
+  color: var(--tinta-suave);
+  max-width: var(--medida);
+  margin-bottom: 0;
+}
+
+/* ---- artigo -------------------------------------------------------------- */
+.artigo {
+  padding-block: 2rem 3rem;
+}
+
+/* Cover above the title, as specified. */
+.artigo__capa {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  background: var(--linha);
+}
+
+.artigo__credito {
+  font-size: 0.75rem;
+  color: var(--tinta-suave);
+  margin: 0.4rem 0 0;
+}
+
+.artigo__titulo {
+  font-size: clamp(2rem, 6vw, 3.25rem);
+  margin-block: 1.25rem 0.75rem;
+  max-width: 20ch;
+}
+
+.artigo__resumo {
+  font-family: var(--serif);
+  font-size: clamp(1.0625rem, 3vw, 1.375rem);
+  line-height: 1.45;
+  color: var(--tinta-suave);
+  max-width: var(--medida);
+  margin-block: 0 1.25rem;
+}
+
+.artigo__assinatura {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: baseline;
+  font-size: 0.875rem;
+  color: var(--tinta-suave);
+  border-top: 1px solid var(--linha);
+  border-bottom: 1px solid var(--linha);
+  padding-block: 0.75rem;
+}
+
+.artigo__autor {
+  font-weight: 600;
+  color: var(--tinta);
+}
+
+.artigo__corpo {
+  max-width: var(--medida);
+  padding-top: 1.75rem;
+}
+
+.artigo__corpo > * + * {
+  margin-top: 1.15rem;
+}
+
+.artigo__corpo h2 {
+  font-size: 1.5rem;
+  margin-top: 2.25rem;
+}
+
+.artigo__corpo h3 {
+  font-size: 1.1875rem;
+  margin-top: 1.75rem;
+}
+
+.artigo__corpo blockquote {
+  margin: 2rem 0;
+  padding-left: 1.25rem;
+  border-left: 3px solid var(--ocre);
+  font-family: var(--serif);
+  font-size: 1.25rem;
+  line-height: 1.4;
+}
+
+.artigo__corpo blockquote cite {
+  display: block;
+  margin-top: 0.6rem;
+  font-family: var(--sans);
+  font-size: 0.8125rem;
+  font-style: normal;
+  color: var(--tinta-suave);
+}
+
+.artigo__corpo hr {
+  border: 0;
+  border-top: 1px solid var(--linha);
+  margin-block: 2rem;
+}
+
+.artigo__corpo figure {
+  margin: 2rem 0;
+}
+
+.artigo__corpo figcaption {
+  font-size: 0.8125rem;
+  color: var(--tinta-suave);
+  margin-top: 0.4rem;
+}
+
+/* ---- página estática ----------------------------------------------------- */
+.prosa {
+  max-width: var(--medida);
+  padding-block: 2rem 3rem;
+}
+
+.prosa h1 {
+  font-size: clamp(1.875rem, 5vw, 2.75rem);
+  margin-bottom: 1rem;
+}
+
+.prosa h2 {
+  font-size: 1.375rem;
+  margin-top: 2.25rem;
+  margin-bottom: 0.5rem;
+}
+
+.prosa dl {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.35rem 1rem;
+  font-size: 0.9375rem;
+  margin: 0;
+}
+
+.prosa dt {
+  font-weight: 600;
+}
+
+.prosa dd {
+  margin: 0;
+  color: var(--tinta-suave);
+}
+
+/* ---- rodapé -------------------------------------------------------------- */
+.rodape {
+  border-top: 2px solid var(--tinta);
+  background: var(--creme);
+  padding-block: 2rem 2.5rem;
+  font-size: 0.875rem;
+  color: var(--tinta-suave);
+}
+
+.rodape__grelha {
+  display: grid;
+  gap: 1.5rem;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 40rem) {
+  .rodape__grelha {
+    grid-template-columns: 2fr 1fr 1fr;
+  }
+}
+
+.rodape h2 {
+  font-family: var(--sans);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--tinta);
+  margin-bottom: 0.5rem;
+}
+
+.rodape ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.3rem;
+}
+
+.rodape a {
+  text-decoration: none;
+}
+
+.rodape a:hover {
+  color: var(--ocre-escuro);
+}
+
+.vazio {
+  padding-block: 3rem 4rem;
+  color: var(--tinta-suave);
+}

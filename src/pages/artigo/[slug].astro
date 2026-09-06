@@ -1,0 +1,50 @@
+---
+import { Image } from 'astro:assets';
+import { render } from 'astro:content';
+import type { GetStaticPaths } from 'astro';
+import Base from '../../layouts/Base.astro';
+import MetaArtigo from '../../components/MetaArtigo.astro';
+import { listarArtigos, urlArtigo, type Artigo } from '../../lib/artigos';
+
+export const getStaticPaths: GetStaticPaths = async () => {
+  const artigos = await listarArtigos();
+  return artigos.map((artigo) => ({ params: { slug: artigo.id }, props: { artigo } }));
+};
+
+const { artigo } = Astro.props as { artigo: Artigo };
+const { data } = artigo;
+
+// ponytail: the page body is rendered by Astro's own Markdown pipeline, not by
+// re-rendering the Block[] built for the app. Both read the same Markdown file,
+// so they cannot drift, and this is zero code. Render from blocks only if the
+// site ever needs a block type the Markdown pipeline cannot express.
+const { Content } = await render(artigo);
+---
+
+<Base titulo={data.titulo} descricao={data.resumo} canonico={urlArtigo(artigo.id)}>
+  <article class="artigo">
+    {/* Cover above the title, as specified. */}
+    <Image
+      class="artigo__capa"
+      src={data.capa}
+      alt={data.capaAlt}
+      widths={[600, 1000, 1600]}
+      sizes="(min-width: 68rem) 64rem, 96vw"
+      loading="eager"
+      fetchpriority="high"
+    />
+    {data.capaCredito && <p class="artigo__credito">{data.capaCredito}</p>}
+
+    <h1 class="artigo__titulo">{data.titulo}</h1>
+    <p class="artigo__resumo">{data.resumo}</p>
+
+    <div class="artigo__assinatura">
+      <span class="artigo__autor">{data.autor}</span>
+      <MetaArtigo artigo={artigo} />
+    </div>
+
+    <div class="artigo__corpo">
+      <Content />
+    </div>
+  </article>
+</Base>

@@ -1,0 +1,23 @@
+---
+import { nomeSeccao, nomeLocalidade, formatarData, dataISO } from '../config/site';
+import type { Artigo } from '../lib/artigos';
+
+interface Props {
+  artigo: Artigo;
+}
+
+const { data } = Astro.props.artigo;
+---
+
+{/* Secção chip, localidade tags and date — shown on every card, as specified. */}
+<p class="meta">
+  <a class="chip" href={`/seccao/${data.seccao}/`}>{nomeSeccao(data.seccao)}</a>
+  {
+    data.localidades.map((l) => (
+      <a class="etiqueta" href={`/localidade/${l}/`}>
+        {nomeLocalidade(l)}
+      </a>
+    ))
+  }
+  <time datetime={dataISO(data.publicadoEm)}>{formatarData(data.publicadoEm)}</time>
+</p>

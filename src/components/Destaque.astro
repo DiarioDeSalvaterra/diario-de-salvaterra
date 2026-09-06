@@ -1,0 +1,30 @@
+---
+import { Image } from 'astro:assets';
+import MetaArtigo from './MetaArtigo.astro';
+import type { Artigo } from '../lib/artigos';
+
+interface Props {
+  artigo: Artigo;
+}
+
+const { artigo } = Astro.props;
+const { data } = artigo;
+---
+
+{/* Hero slot on the front page: one destaque, large cover, then the grid. */}
+<article>
+  <a class="destaque" href={`/artigo/${artigo.id}/`}>
+    <Image
+      class="destaque__capa"
+      src={data.capa}
+      alt={data.capaAlt}
+      widths={[600, 1000, 1600]}
+      sizes="(min-width: 68rem) 64rem, 96vw"
+      loading="eager"
+      fetchpriority="high"
+    />
+    <h2 class="destaque__titulo">{data.titulo}</h2>
+    <p class="destaque__resumo">{data.resumo}</p>
+  </a>
+  <MetaArtigo artigo={artigo} />
+</article>

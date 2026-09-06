@@ -1,0 +1,41 @@
+---
+import type { GetStaticPaths } from 'astro';
+import Base from '../../layouts/Base.astro';
+import CartaoArtigo from '../../components/CartaoArtigo.astro';
+import { listarArtigos, porSeccao, type Artigo } from '../../lib/artigos';
+import { SECCAO_SLUGS, nomeSeccao, type Seccao } from '../../config/site';
+
+export const getStaticPaths: GetStaticPaths = async () => {
+  const artigos = await listarArtigos();
+  // Every secção gets a page, including the empty ones: a section that
+  // vanishes from the navigation when it has no articles reads as a broken site.
+  return SECCAO_SLUGS.map((slug) => ({
+    params: { slug },
+    props: { slug, artigos: porSeccao(artigos, slug) },
+  }));
+};
+
+const { slug, artigos } = Astro.props as { slug: Seccao; artigos: Artigo[] };
+const nome = nomeSeccao(slug);
+---
+
+<Base titulo={nome} descricao={`Artigos da secção ${nome} no Diário de Salvaterra.`}>
+  <div class="seccao-cabecalho">
+    <h1>{nome}</h1>
+    <p>{artigos.length === 1 ? '1 artigo' : `${artigos.length} artigos`}</p>
+  </div>
+
+  {
+    artigos.length > 0 ? (
+      <ul class="grelha">
+        {artigos.map((artigo) => (
+          <li>
+            <CartaoArtigo artigo={artigo} />
+          </li>
+        ))}
+      </ul>
+    ) : (
+      <p class="vazio">Ainda não há artigos nesta secção.</p>
+    )
+  }
+</Base>

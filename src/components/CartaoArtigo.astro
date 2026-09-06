@@ -1,0 +1,30 @@
+---
+import { Image } from 'astro:assets';
+import MetaArtigo from './MetaArtigo.astro';
+import type { Artigo } from '../lib/artigos';
+
+interface Props {
+  artigo: Artigo;
+}
+
+const { artigo } = Astro.props;
+const { data } = artigo;
+---
+
+<article class="cartao">
+  <a href={`/artigo/${artigo.id}/`} tabindex="-1" aria-hidden="true">
+    <Image
+      class="cartao__capa"
+      src={data.capa}
+      alt=""
+      widths={[400, 800]}
+      sizes="(min-width: 60rem) 21rem, (min-width: 40rem) 45vw, 92vw"
+      loading="lazy"
+    />
+  </a>
+  <MetaArtigo artigo={artigo} />
+  <h2 class="cartao__titulo">
+    <a href={`/artigo/${artigo.id}/`}>{data.titulo}</a>
+  </h2>
+  <p class="cartao__resumo">{data.resumo}</p>
+</article>

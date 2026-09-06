@@ -1,17 +1,30 @@
 ---
+import Base from '../layouts/Base.astro';
+import Destaque from '../components/Destaque.astro';
+import CartaoArtigo from '../components/CartaoArtigo.astro';
+import { listarArtigos } from '../lib/artigos';
+import { SITE } from '../config/site';
 
+const artigos = await listarArtigos();
+// The hero is the most recent destaque; everything else falls into the grid.
+const destaque = artigos.find((a) => a.data.destaque);
+const restantes = artigos.filter((a) => a !== destaque);
 ---
 
-<html lang="en">
-	<head>
-		<meta charset="utf-8" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<link rel="icon" href="/favicon.ico" />
-		<meta name="viewport" content="width=device-width" />
-		<meta name="generator" content={Astro.generator} />
-		<title>Astro</title>
-	</head>
-	<body>
-		<h1>Astro</h1>
-	</body>
-</html>
+<Base titulo={SITE.nome}>
+  {destaque && <Destaque artigo={destaque} />}
+
+  {
+    restantes.length > 0 ? (
+      <ul class="grelha">
+        {restantes.map((artigo) => (
+          <li>
+            <CartaoArtigo artigo={artigo} />
+          </li>
+        ))}
+      </ul>
+    ) : (
+      !destaque && <p class="vazio">Ainda não há artigos publicados.</p>
+    )
+  }
+</Base>
