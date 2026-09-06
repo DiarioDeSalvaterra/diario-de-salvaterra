@@ -7,8 +7,10 @@
  */
 
 /** Base URL of the current deployment, without a trailing slash. */
+// `||`, not `??`: an unset GitHub Actions variable arrives as an empty string,
+// which would otherwise win over the default and produce a site with no host.
 const baseUrl = (
-  import.meta.env.PUBLIC_BASE_URL ?? 'https://dev.diariodesalvaterra.pt'
+  import.meta.env.PUBLIC_BASE_URL || 'https://dev.diariodesalvaterra.pt'
 ).replace(/\/$/, '');
 
 export const SITE = {

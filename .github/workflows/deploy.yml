@@ -1,0 +1,64 @@
+name: Deploy
+
+# The site is rebuilt on every push to main. Sveltia CMS commits straight to
+# this branch, so publishing an article and deploying it are the same action.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Required by actions/deploy-pages. Pages must be set to deploy from GitHub
+# Actions in the repository settings, not from a branch.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Let a running deploy finish rather than cancelling it: a half-published site
+# is worse than a slightly stale one.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  # The JSON API is a published contract with the Expo app, which cannot be
+  # hotfixed the way the site can. A broken converter must fail here rather
+  # than reach a published articles.json.
+  verificar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - run: bun test
+      - run: bunx astro check
+
+  build:
+    needs: verificar
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: withastro/action@v6
+        env:
+          # Both default to the dev host when the repository variables are
+          # unset, so a fresh fork deploys somewhere harmless and unindexed.
+          # Set PUBLIC_BASE_URL and PUBLIC_INDEXAVEL under Settings > Secrets
+          # and variables > Actions > Variables to move to the apex domain, and
+          # update public/CNAME in the same change.
+          PUBLIC_BASE_URL: ${{ vars.PUBLIC_BASE_URL }}
+          PUBLIC_INDEXAVEL: ${{ vars.PUBLIC_INDEXAVEL }}
+        with:
+          # Bun installs the dependencies; Astro itself still runs on Node,
+          # which is why there is no --bun anywhere near this.
+          package-manager: bun@latest
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/deploy-pages@v5
+        id: deployment

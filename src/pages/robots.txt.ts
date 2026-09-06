@@ -7,8 +7,9 @@ import { SITE, INDEXAVEL } from '../config/site';
  * with PUBLIC_INDEXAVEL=true allows crawling.
  */
 export const GET: APIRoute = () => {
+  // /admin is the CMS, never a page worth indexing on any host.
   const corpo = INDEXAVEL
-    ? `User-agent: *\nAllow: /\n\nSitemap: ${SITE.baseUrl}/rss.xml\n`
+    ? `User-agent: *\nAllow: /\nDisallow: /admin/\n\nSitemap: ${SITE.baseUrl}/rss.xml\n`
     : 'User-agent: *\nDisallow: /\n';
 
   return new Response(corpo, {

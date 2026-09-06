@@ -1,7 +1,8 @@
 // @ts-check
 import { defineConfig, fontProviders } from 'astro/config';
 
-const site = process.env.PUBLIC_BASE_URL ?? 'https://dev.diariodesalvaterra.pt';
+// `||`, not `??`: an unset GitHub Actions variable arrives as an empty string.
+const site = process.env.PUBLIC_BASE_URL || 'https://dev.diariodesalvaterra.pt';
 
 // No `base`: the site is served from the root of a custom domain, on both the
 // dev host and the apex. Setting one would break every absolute path.

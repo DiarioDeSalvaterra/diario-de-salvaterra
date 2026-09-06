@@ -105,7 +105,7 @@ Display names live only in `src/config/site.ts`. Never hardcode them.
 /localidade/{slug}     place index
 /sobre                 ficha técnica, editorial statement, demo notice
 /rss.xml
-/admin                 Sveltia CMS
+/admin                 Sveltia CMS (index.html static, config.yml generated)
 ```
 
 ## JSON API — stable contract
@@ -266,14 +266,77 @@ bunx astro check     # typecheck
 
 ## Known friction
 
-- **Sveltia media folder vs Astro image optimisation.** Images the CMS commits to
-  `public/` bypass `astro:assets`. Point Sveltia's `media_folder` at
-  `src/assets/uploads` and use the `image()` helper in the collection schema so
-  covers get optimised.
+- **Sveltia media folder vs Astro image optimisation.** Solved. The `artigos`
+  collection overrides `media_folder` and `public_folder` to the same relative
+  path, `../../assets/uploads`, resolved against the collection folder. Uploads
+  land in `src/assets/uploads` and the frontmatter gets
+  `../../assets/uploads/x.webp`, which the `image()` helper resolves and
+  optimises. Anything written to `public/` would bypass `astro:assets` entirely.
 - **Sveltia auth** uses a fine-grained PAT held in the browser. Fine for one
   editor. Move to a Cloudflare Worker OAuth relay when real editors appear.
 - **Cloudflare DNS**, if used, must stay grey-clouded (DNS only) until GitHub has
   issued the certificate. Proxying blocks provisioning.
+
+## CMS
+
+Sveltia CMS is served at `/admin`, and there are two files behind it.
+
+`public/admin/index.html` loads the CMS from unpkg at a **pinned version**. It
+must not float on `@latest`: this script gains write access to the repository
+the moment an editor signs in, and it should not change under us between one
+edit and the next. Bump it deliberately.
+
+`/admin/config.yml` is **generated at build time** by
+`src/pages/admin/config.yml.ts`, not checked in. That is what keeps the secção
+and localidade labels in the CMS identical to the ones the site renders: a
+hand-written config would be a second copy of the taxonomy and would drift the
+first time a freguesia is added. Its body is JSON, which is valid YAML 1.2, so
+no YAML serialiser is needed.
+
+**The fields in that file mirror the Zod schema exactly.** Change one and change
+the other in the same commit. If they disagree, the CMS writes a file the schema
+rejects and the build fails — loud and non-destructive, since the published site
+stays on the previous version, but the editor sees a red deploy rather than
+their article.
+
+### Signing in
+
+No OAuth relay and nothing to configure for it. Click **Sign In with Token** and
+paste a fine-grained personal access token, which is kept in browser local
+storage:
+
+- Repository access: only `DiarioDeSalvaterra/diario-de-salvaterra`
+- Permissions: **Contents** read and write. Nothing else.
+
+## Deployment
+
+`.github/workflows/deploy.yml`, on every push to `main`. Sveltia commits to
+`main`, so publishing an article and deploying it are the same action.
+
+Three jobs. `verificar` runs `bun test` and `astro check`; the JSON API is a
+contract with an app that cannot be hotfixed, so a broken converter fails here
+rather than reaching a published `articles.json`. `build` then runs
+`withastro/action`, and `deploy` publishes.
+
+Repository **Settings > Pages** must have the source set to **GitHub Actions**,
+not a branch.
+
+Bun installs dependencies; Astro still runs on Node inside the action. Nothing
+passes `--bun`.
+
+### Moving to the apex domain
+
+Set the repository variables under **Settings > Secrets and variables > Actions
+> Variables**, and edit `public/CNAME` in the same change:
+
+| | |
+|---|---|
+| `PUBLIC_BASE_URL` | `https://diariodesalvaterra.pt` |
+| `PUBLIC_INDEXAVEL` | `true` |
+| `public/CNAME` | `diariodesalvaterra.pt` |
+
+Both variables are read with `||` rather than `??`, because an unset Actions
+variable arrives as an empty string and would otherwise beat the default.
 
 ## Don'ts
 
